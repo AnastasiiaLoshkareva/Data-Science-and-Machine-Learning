@@ -1,0 +1,12 @@
+# Create a 3x3x3 array with random values 
+import numpy as np
+
+# Create numpy array using numpy modul random function randint
+arr = np.random.randint(0,100,27)
+
+# Reshape 1-dimentional array into 3-dimentional array (3x3x3)
+arr_3D = arr.reshape(3,3,3)
+print(arr_3D)
+
+if __name__ == '__main__':
+    main()
