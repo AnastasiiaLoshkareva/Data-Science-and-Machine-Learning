@@ -1,0 +1,88 @@
+#import modules
+import yfinance as yf
+import pandas as pd
+import numpy as np
+#modules for plotting
+import seaborn as sns
+import matplotlib.pyplot as plt
+%matplotlib inline
+
+# web scrapping to get tickers
+import pandas as pd
+
+# Fetch S&P 500 tickers from Wikipedia
+url='https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
+df=pd.read_html(url)
+df_all=df[0]  # The first table in the Wikipedia page
+
+# List of required banks
+banks=['Bank of America','Citigroup','Goldman Sachs','JPMorgan Chase','Morgan Stanley','Wells Fargo']
+
+selected_columns = df_all[['Security', 'Symbol']]
+
+#grab required banks tickers from all tickers list
+selected_columns[selected_columns['Security'].apply(lambda x:x in banks)]
+
+#create a list of required banks tickers
+ticker_list=selected_columns[selected_columns['Security'].apply(lambda x:x in banks)]['Symbol'].tolist()
+
+#sort list of required banks tickers alphabetically
+ticker_list.sort()
+tickers=ticker_list
+tickers
+
+#for each bank create pd DataFrame with stock info
+BAC=yf.download(tickers[0],start="2006-01-01",end="2016-01-01")
+C=yf.download(tickers[1],start="2006-01-01",end="2016-01-01")
+GS=yf.download(tickers[2],start="2006-01-01",end="2016-01-01")
+JPM=yf.download(tickers[3],start="2006-01-01",end="2016-01-01")
+MS=yf.download(tickers[4],start="2006-01-01",end="2016-01-01")
+WFC=yf.download(tickers[5],start="2006-01-01",end="2016-01-01")
+
+#concatenate for all banks DataFrame bank_stock
+bank_stock=pd.concat([BAC,C,GS,JPM,MS,WFC],axis=1,keys=tickers)
+
+#create names for columns
+bank_stock.columns.names = ['Bank Ticker','Stock Info']
+
+print(bank_stock)
+
+#create multiIndex
+#1st level index - banks names
+arr_1=tickers*6
+arr_1.sort()
+#2nd level index stock info
+arr_2=['Open','High','Low','Close','Adj Close','Volume']*6
+
+#create multiIndex using 2 levels
+arrays=[arr_1,arr_2]
+tuples = list(zip(*arrays))
+index = pd.MultiIndex.from_tuples(tuples, names=["Bank Ticker", "Stock Info"])
+
+# Apply this MultiIndex to the DataFrame's columns
+bank_stock.columns = index
+
+# Verify the result
+print(bank_stock.head())
+
+# Using xs() to extract all "Open" prices for each bank
+open_prices = bank_stock.xs('Open', level='Stock Info', axis=1)
+print(open_prices)
+
+#extract the maximum Close price for each bank
+close_prices = bank_stock.xs('Close', level='Stock Info', axis=1)
+close_prices.max()
+
+#Create a new empty DataFrame called returns. This dataframe will contain the returns for each bank's stock
+for col in close_prices.columns:
+    return_col=col+'_return'
+    close_prices[return_col] = close_prices[col].pct_change()
+#call DataFrame as returns
+returns = close_prices[['BAC_return','C_return','GS_return','JPM_return','MS_return','WFC_return']]
+
+# Create a pairplot using seaborn of the returns dataframe
+sns.pairplot(returns)
+plt.show()
+
+if __name__ == '__main__':
+    main()
